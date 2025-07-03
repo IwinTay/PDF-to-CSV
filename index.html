@@ -18,7 +18,7 @@
             outline: 2px solid #4f46e5;
             background-color: #eef2ff;
         }
-        #bulk-action-bar.hidden, #progress-bar-container.hidden {
+        #bulk-action-bar.hidden, #progress-bar-container.hidden, #confirmation-modal-backdrop.hidden {
             display: none;
         }
         .loader {
@@ -32,6 +32,9 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .highlight-warning {
+            background-color: #fef9c3; /* yellow-100 */
         }
     </style>
 </head>
@@ -68,8 +71,9 @@
                 <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-900">2. Verify & Edit Data</h2>
-                        <div class="flex space-x-2">
-                            <button id="clear-list-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Clear List</button>
+                        <div class="flex items-center space-x-2">
+                             <span id="currency-display" class="text-sm font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md hidden"></span>
+                            <button id="clear-list-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Clear</button>
                             <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
                         </div>
                     </div>
@@ -78,6 +82,7 @@
                             <thead class="bg-gray-50 sticky top-0">
                                 <tr>
                                     <th class="p-2 w-6"><input type="checkbox" id="select-all-checkbox"></th>
+                                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
                                     <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
@@ -85,7 +90,7 @@
                                 </tr>
                             </thead>
                             <tbody id="data-table" class="divide-y divide-gray-200">
-                                <tr><td colspan="5" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
+                                <tr><td colspan="6" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -112,6 +117,18 @@
         </div>
     </div>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div id="confirmation-modal" class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm mx-auto transform transition-all scale-95 opacity-0">
+            <h3 id="confirmation-modal-title" class="text-lg font-bold text-gray-900">Confirm Action</h3>
+            <p id="confirmation-modal-message" class="mt-2 text-sm text-gray-600">Are you sure?</p>
+            <div class="mt-6 flex justify-end space-x-3">
+                <button id="confirmation-modal-cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="confirmation-modal-confirm-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         // --- PDF.js Setup ---
         const { pdfjsLib } = globalThis;
@@ -134,7 +151,13 @@
         const applyCategoryBtn = document.getElementById('apply-category-btn');
         const progressBarContainer = document.getElementById('progress-bar-container');
         const progressBar = document.getElementById('progress-bar');
-        const tableContainer = document.getElementById('table-container');
+        const currencyDisplay = document.getElementById('currency-display');
+        const confirmationModalBackdrop = document.getElementById('confirmation-modal-backdrop');
+        const confirmationModal = document.getElementById('confirmation-modal');
+        const confirmationModalTitle = document.getElementById('confirmation-modal-title');
+        const confirmationModalMessage = document.getElementById('confirmation-modal-message');
+        const confirmationModalCancelBtn = document.getElementById('confirmation-modal-cancel-btn');
+        const confirmationModalConfirmBtn = document.getElementById('confirmation-modal-confirm-btn');
 
         // --- File Upload Handling ---
         fileInput.addEventListener('change', (e) => handleFileBatch(e.target.files));
@@ -162,14 +185,16 @@
             }
 
             statusEl.textContent = `Extracted ${extractedData.length} total items from ${files.length} file(s). Please verify.`;
+            validateData(); // Run validation after all files are processed
             renderTable();
         }
         
         function resetUI() {
-            dataTable.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
+            dataTable.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
             exportBtn.disabled = true;
             addRowBtn.disabled = true;
             clearListBtn.disabled = true;
+            currencyDisplay.classList.add('hidden');
             progressBarContainer.classList.add('hidden');
         }
 
@@ -215,29 +240,35 @@
 
         // --- Image Processing with AI ---
         async function processImage(file) {
-            progressBarContainer.classList.add('hidden'); // AI doesn't have page-by-page progress
+            progressBarContainer.classList.add('hidden');
             
             const base64ImageData = await toBase64(file);
             
             const payload = {
                 contents: [{
                     parts: [
-                        { text: "Analyze this image of a restaurant menu. Extract all menu items, their prices, and their categories. Return the data as a JSON array where each object has 'name', 'price', and 'category' keys. The price should be a number." },
+                        { text: "Analyze this image of a restaurant menu. Extract the following information into a single JSON object: 1. A 'currency' key with the detected currency symbol (e.g., 'RM', '$', '€'). 2. An 'items' key containing an array of all menu items, where each item is an object with 'name', 'price', and 'category' keys. The price should be a number. Correct any obvious spelling mistakes in the item names." },
                         { inline_data: { mime_type: file.type, data: base64ImageData } }
                     ]
                 }],
                 generation_config: {
                     "response_mime_type": "application/json",
                     "response_schema": {
-                        "type": "ARRAY",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "name": { "type": "STRING" },
-                                "price": { "type": "NUMBER" },
-                                "category": { "type": "STRING" }
-                            },
-                            "required": ["name", "price", "category"]
+                        "type": "OBJECT",
+                        "properties": {
+                            "currency": { "type": "STRING" },
+                            "items": {
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "name": { "type": "STRING" },
+                                        "price": { "type": "NUMBER" },
+                                        "category": { "type": "STRING" }
+                                    },
+                                    "required": ["name", "price", "category"]
+                                }
+                            }
                         }
                     }
                 }
@@ -257,8 +288,13 @@
                 const text = result.candidates[0].content.parts[0].text;
                 const data = JSON.parse(text);
                 
-                const newData = data.map(item => ({ ...item, selected: false }));
-                extractedData.push(...newData); // Append results
+                if(data.currency) {
+                    currencyDisplay.textContent = `Detected Currency: ${data.currency}`;
+                    currencyDisplay.classList.remove('hidden');
+                }
+                
+                const newData = data.items.map(item => ({ ...item, selected: false }));
+                extractedData.push(...newData);
 
             } catch (error) {
                 handleError(`AI analysis failed for ${file.name}.`);
@@ -307,22 +343,54 @@
                 }
             });
             
-            extractedData.push(...newData); // Append results
+            extractedData.push(...newData);
         }
+        
+        // --- AI Data Validation ---
+        function validateData() {
+            if (extractedData.length < 5) return; // Don't validate very small lists
+
+            const prices = extractedData.map(item => parseFloat(item.price)).filter(p => !isNaN(p));
+            if (prices.length === 0) return;
+
+            const sum = prices.reduce((a, b) => a + b, 0);
+            const avg = sum / prices.length;
+            const stdDev = Math.sqrt(prices.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / prices.length);
+
+            extractedData.forEach(item => {
+                const price = parseFloat(item.price);
+                if (!isNaN(price)) {
+                    // Flag as potential error if price is more than 2 standard deviations from the average
+                    if (Math.abs(price - avg) > 2 * stdDev) {
+                        item.potentialError = true;
+                    } else {
+                        item.potentialError = false;
+                    }
+                }
+            });
+        }
+
 
         // --- Table Rendering and Editing ---
         function renderTable() {
             dataTable.innerHTML = '';
             if (extractedData.length === 0) {
-                dataTable.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">No items found. You can add rows manually.</td></tr>';
+                dataTable.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No items found. You can add rows manually.</td></tr>';
             }
 
             extractedData.forEach((item, index) => {
                 const row = document.createElement('tr');
+                if(item.potentialError) {
+                    row.classList.add('highlight-warning');
+                }
+                const priceValue = parseFloat(item.price);
+                const displayPrice = isNaN(priceValue) ? '0.00' : priceValue.toFixed(2);
+
                 row.innerHTML = `
                     <td class="p-2 border-b border-gray-200 text-center"><input type="checkbox" class="row-checkbox" data-index="${index}" ${item.selected ? 'checked' : ''}></td>
+                    <td class="p-2 border-b border-gray-200 text-center text-sm text-gray-500">${index + 1}</td>
                     <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="name" class="p-1 rounded-md">${item.name}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="price" class="p-1 rounded-md">${item.price.toFixed(2)}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="price" class="p-1 rounded-md">${displayPrice}</div></td>
                     <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="category" class="p-1 rounded-md">${item.category}</div></td>
                     <td class="p-2 border-b border-gray-200 text-center"><button data-index="${index}" class="delete-row-btn text-red-500 hover:text-red-700">&times;</button></td>
                 `;
@@ -351,7 +419,11 @@
             if (target.hasAttribute('contenteditable')) {
                 const index = parseInt(target.dataset.index, 10);
                 const field = target.dataset.field;
-                extractedData[index][field] = target.textContent;
+                let value = target.textContent;
+                if (field === 'price') {
+                    value = parseFloat(value) || 0;
+                }
+                extractedData[index][field] = value;
             }
         });
 
@@ -373,11 +445,11 @@
         });
 
         clearListBtn.addEventListener('click', () => {
-            if (window.confirm('Are you sure you want to clear the entire list?')) {
+            showConfirmationModal('Clear Entire List', 'Are you sure you want to clear all extracted items?', () => {
                 extractedData = [];
                 renderTable();
                 statusEl.textContent = 'List cleared. Upload a new file to begin.';
-            }
+            });
         });
 
         selectAllCheckbox.addEventListener('change', (e) => {
@@ -398,6 +470,31 @@
                 renderTable();
             }
         });
+        
+        // --- Confirmation Modal Logic ---
+        function showConfirmationModal(title, message, onConfirm) {
+            confirmationModalTitle.textContent = title;
+            confirmationModalMessage.textContent = message;
+            
+            const newConfirmBtn = confirmationModalConfirmBtn.cloneNode(true);
+            confirmationModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, confirmationModalConfirmBtn);
+            
+            newConfirmBtn.onclick = () => {
+                onConfirm();
+                hideConfirmationModal();
+            };
+            
+            confirmationModalCancelBtn.onclick = hideConfirmationModal;
+            
+            confirmationModalBackdrop.classList.remove('hidden');
+            setTimeout(() => confirmationModal.classList.remove('scale-95', 'opacity-0'), 10);
+        }
+
+        function hideConfirmationModal() {
+            confirmationModal.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => confirmationModalBackdrop.classList.add('hidden'), 200);
+        }
+
 
         // --- CSV Export ---
         exportBtn.addEventListener('click', () => {
