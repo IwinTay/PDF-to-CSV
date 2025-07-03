@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Menu to Excel Converter</title>
+    <title>The Menu Extractor</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- PDF.js Library -->
@@ -18,8 +18,20 @@
             outline: 2px solid #4f46e5;
             background-color: #eef2ff;
         }
-        #bulk-action-bar.hidden {
+        #bulk-action-bar.hidden, #progress-bar-container.hidden {
             display: none;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -27,8 +39,8 @@
 
     <div class="container mx-auto p-4 sm:p-6 md:p-8">
         <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">PDF Menu Digitizer</h1>
-            <p class="text-gray-600 mt-2">Upload a PDF menu to extract items and prices into an editable table.</p>
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">The Menu Extractor</h1>
+            <p class="text-gray-600 mt-2">Upload multiple PDF, JPG, or PNG menus to extract items and prices.</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -36,14 +48,18 @@
             <!-- Left Panel: Upload -->
             <div class="lg:col-span-3">
                 <div class="bg-white p-6 rounded-xl shadow-md h-full">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">1. Upload Menu</h2>
-                    <input type="file" id="pdf-input" accept=".pdf" class="hidden">
-                    <label for="pdf-input" id="upload-box" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">1. Upload Files</h2>
+                    <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple>
+                    <label for="file-input" id="upload-box" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                         <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h5l4 4v5a4 4 0 01-4 4H7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 17.657L13.414 21.9a2 2 0 01-2.827 0L7 17.657M10 14l2-2m0 0l2-2m-2 2v4"></path></svg>
-                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                        <p class="text-xs text-gray-500">PDF only</p>
+                        <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag & drop</p>
+                        <p class="text-xs text-gray-500">PDF, JPG, PNG (Multiple files allowed)</p>
                     </label>
                     <div id="status" class="mt-4 text-sm text-center"></div>
+                    <!-- Progress Bar -->
+                    <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-2.5 mt-2 hidden">
+                        <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
@@ -57,7 +73,7 @@
                             <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
                         </div>
                     </div>
-                    <div class="overflow-auto max-h-96 flex-grow">
+                    <div id="table-container" class="overflow-auto max-h-96 flex-grow">
                         <table class="min-w-full">
                             <thead class="bg-gray-50 sticky top-0">
                                 <tr>
@@ -69,7 +85,7 @@
                                 </tr>
                             </thead>
                             <tbody id="data-table" class="divide-y divide-gray-200">
-                                <tr><td colspan="5" class="p-4 text-center text-gray-500">Upload a PDF to begin.</td></tr>
+                                <tr><td colspan="5" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -106,7 +122,7 @@
 
         // --- DOM References ---
         const uploadBox = document.getElementById('upload-box');
-        const pdfInput = document.getElementById('pdf-input');
+        const fileInput = document.getElementById('file-input');
         const statusEl = document.getElementById('status');
         const dataTable = document.getElementById('data-table');
         const exportBtn = document.getElementById('export-btn');
@@ -116,91 +132,182 @@
         const bulkActionBar = document.getElementById('bulk-action-bar');
         const bulkCategoryInput = document.getElementById('bulk-category-input');
         const applyCategoryBtn = document.getElementById('apply-category-btn');
+        const progressBarContainer = document.getElementById('progress-bar-container');
+        const progressBar = document.getElementById('progress-bar');
+        const tableContainer = document.getElementById('table-container');
 
         // --- File Upload Handling ---
-        pdfInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+        fileInput.addEventListener('change', (e) => handleFileBatch(e.target.files));
         uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.classList.add('dragover'); });
         uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
-        uploadBox.addEventListener('drop', (e) => { e.preventDefault(); uploadBox.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+        uploadBox.addEventListener('drop', (e) => { e.preventDefault(); uploadBox.classList.remove('dragover'); handleFileBatch(e.dataTransfer.files); });
         
-        async function handleFile(file) {
-            if (!file || file.type !== 'application/pdf') {
-                statusEl.textContent = 'Please upload a valid PDF file.';
-                return;
-            }
+        async function handleFileBatch(files) {
+            if (!files || files.length === 0) return;
             
-            statusEl.textContent = 'Processing...';
-            dataTable.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Reading PDF...</td></tr>';
+            resetUI();
+            extractedData = []; // Clear previous results for a new batch
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                statusEl.textContent = `Processing file ${i + 1} of ${files.length}: ${file.name}`;
+                
+                if (file.type === 'application/pdf') {
+                    await processPdf(file);
+                } else if (file.type.startsWith('image/')) {
+                    await processImage(file);
+                } else {
+                    console.warn(`Skipping unsupported file type: ${file.name}`);
+                }
+            }
+
+            statusEl.textContent = `Extracted ${extractedData.length} total items from ${files.length} file(s). Please verify.`;
+            renderTable();
+        }
+        
+        function resetUI() {
+            dataTable.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
             exportBtn.disabled = true;
             addRowBtn.disabled = true;
             clearListBtn.disabled = true;
+            progressBarContainer.classList.add('hidden');
+        }
+
+        // --- PDF Processing ---
+        async function processPdf(file) {
+            updateProgress(0);
+            progressBarContainer.classList.remove('hidden');
 
             try {
                 const fileReader = new FileReader();
-                fileReader.onload = async function() {
-                    const typedarray = new Uint8Array(this.result);
-                    const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                const data = await new Promise((resolve, reject) => {
+                    fileReader.onload = () => resolve(fileReader.result);
+                    fileReader.onerror = reject;
+                    fileReader.readAsArrayBuffer(file);
+                });
+
+                const typedarray = new Uint8Array(data);
+                const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                
+                let lines = [];
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
                     
-                    let lines = [];
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        // Group text items into lines based on their vertical position
-                        const pageLines = textContent.items.reduce((acc, item) => {
-                            const y = Math.round(item.transform[5]);
-                            if (!acc[y]) acc[y] = [];
-                            acc[y].push(item.str);
-                            return acc;
-                        }, {});
-                        Object.values(pageLines).forEach(line => lines.push(line.join(' ')));
-                    }
-                    
-                    parseLines(lines);
-                };
-                fileReader.readAsArrayBuffer(file);
+                    const pageLines = textContent.items.reduce((acc, item) => {
+                        const y = Math.round(item.transform[5]);
+                        if (!acc[y]) acc[y] = [];
+                        acc[y].push(item.str);
+                        return acc;
+                    }, {});
+                    Object.values(pageLines).forEach(line => lines.push(line.join(' ')));
+                    updateProgress((i / pdf.numPages) * 100);
+                }
+                
+                parsePdfLines(lines);
+
             } catch (error) {
-                console.error('Error processing PDF:', error);
-                statusEl.textContent = 'Error reading PDF file.';
+                handleError(`Error reading PDF: ${file.name}`);
+            } finally {
+                progressBarContainer.classList.add('hidden');
             }
         }
 
-        // --- Smarter Text Parsing ---
-        function parseLines(lines) {
-            statusEl.textContent = 'Extracting items...';
-            extractedData = [];
+        // --- Image Processing with AI ---
+        async function processImage(file) {
+            progressBarContainer.classList.add('hidden'); // AI doesn't have page-by-page progress
+            
+            const base64ImageData = await toBase64(file);
+            
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: "Analyze this image of a restaurant menu. Extract all menu items, their prices, and their categories. Return the data as a JSON array where each object has 'name', 'price', and 'category' keys. The price should be a number." },
+                        { inline_data: { mime_type: file.type, data: base64ImageData } }
+                    ]
+                }],
+                generation_config: {
+                    "response_mime_type": "application/json",
+                    "response_schema": {
+                        "type": "ARRAY",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "name": { "type": "STRING" },
+                                "price": { "type": "NUMBER" },
+                                "category": { "type": "STRING" }
+                            },
+                            "required": ["name", "price", "category"]
+                        }
+                    }
+                }
+            };
+
+            try {
+                const apiKey = ""; // Will be provided by the environment
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+                const result = await response.json();
+                const text = result.candidates[0].content.parts[0].text;
+                const data = JSON.parse(text);
+                
+                const newData = data.map(item => ({ ...item, selected: false }));
+                extractedData.push(...newData); // Append results
+
+            } catch (error) {
+                handleError(`AI analysis failed for ${file.name}.`);
+                console.error("AI Error:", error);
+            }
+        }
+
+        const toBase64 = file => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
+        
+        function handleError(message) {
+            statusEl.textContent = message;
+        }
+        
+        function updateProgress(percentage) {
+            progressBar.style.width = `${percentage}%`;
+        }
+
+        // --- Text Parsing ---
+        function parsePdfLines(lines) {
             let currentCategory = 'Uncategorized';
+            const newData = [];
 
             lines.forEach(line => {
                 line = line.trim();
                 if (!line) return;
 
-                // Rule for identifying a category: all caps, no numbers, likely short.
                 if (line.toUpperCase() === line && !/\d/.test(line) && line.length < 30) {
-                    currentCategory = line.split(' ')[0].charAt(0).toUpperCase() + line.split(' ')[0].slice(1).toLowerCase(); // Capitalize first word
+                    currentCategory = line.split(' ')[0].charAt(0).toUpperCase() + line.split(' ')[0].slice(1).toLowerCase();
                     return;
                 }
                 
-                // Rule for identifying a menu item: contains a price like X.XX or XX.XX
-                const priceMatch = line.match(/(\d{1,3}(?:,\d{3})*\.\d{2})$/); // Matches price at the end of the line
+                const priceMatch = line.match(/(\d{1,3}(?:,\d{3})*\.\d{2})$/);
                 if (priceMatch) {
                     const price = parseFloat(priceMatch[1].replace(/,/g, ''));
                     let itemName = line.substring(0, priceMatch.index).trim();
-                    // Clean up trailing dots or dashes
                     itemName = itemName.replace(/[.\-_\s]+$/, '').trim();
 
                     if (itemName.length > 2) {
-                        extractedData.push({
-                            name: itemName,
-                            price: price,
-                            category: currentCategory,
-                            selected: false
-                        });
+                        newData.push({ name: itemName, price: price, category: currentCategory, selected: false });
                     }
                 }
             });
             
-            statusEl.textContent = `Extracted ${extractedData.length} items. Please verify.`;
-            renderTable();
+            extractedData.push(...newData); // Append results
         }
 
         // --- Table Rendering and Editing ---
@@ -236,7 +343,7 @@
             } else {
                 bulkActionBar.classList.add('hidden');
             }
-            selectAllCheckbox.checked = selectedCount > 0 && selectedCount === extractedData.length;
+            selectAllCheckbox.checked = extractedData.length > 0 && selectedCount === extractedData.length;
         }
 
         dataTable.addEventListener('input', (e) => {
@@ -269,7 +376,7 @@
             if (window.confirm('Are you sure you want to clear the entire list?')) {
                 extractedData = [];
                 renderTable();
-                statusEl.textContent = 'List cleared. Upload a new PDF to begin.';
+                statusEl.textContent = 'List cleared. Upload a new file to begin.';
             }
         });
 
