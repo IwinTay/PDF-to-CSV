@@ -48,8 +48,8 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Left Panel: Upload & History -->
-            <div class="lg:col-span-3 space-y-8">
+            <!-- Left Panel: Upload -->
+            <div class="lg:col-span-4">
                 <div class="bg-white p-6 rounded-xl shadow-md h-full">
                     <h2 class="text-xl font-bold text-gray-900 mb-4">1. Upload Files</h2>
                     <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple>
@@ -63,16 +63,10 @@
                         <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-xl shadow-md h-full">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">Session History</h2>
-                    <div id="session-history-list" class="space-y-2 max-h-96 overflow-y-auto">
-                        <p class="text-sm text-gray-500 text-center">No saved sessions yet.</p>
-                    </div>
-                </div>
             </div>
 
             <!-- Right Panel: Verify & Edit -->
-            <div class="lg:col-span-9">
+            <div class="lg:col-span-8">
                 <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
                     <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold text-gray-900">2. Verify & Edit Data</h2>
@@ -82,7 +76,7 @@
                             <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
                         </div>
                     </div>
-                    <div id="table-container" class="overflow-auto max-h-96 flex-grow">
+                    <div id="table-container" class="overflow-auto max-h-[60vh] flex-grow">
                         <table class="min-w-full">
                             <thead class="bg-gray-50 sticky top-0">
                                 <tr>
@@ -138,7 +132,6 @@
 
         // --- State Management ---
         let extractedData = [];
-        let sessionHistory = [];
 
         // --- DOM References ---
         const dom = {
@@ -156,7 +149,6 @@
             progressBarContainer: document.getElementById('progress-bar-container'),
             progressBar: document.getElementById('progress-bar'),
             currencyDisplay: document.getElementById('currency-display'),
-            sessionHistoryList: document.getElementById('session-history-list'),
             confirmationModalBackdrop: document.getElementById('confirmation-modal-backdrop'),
             confirmationModal: document.getElementById('confirmation-modal'),
             confirmationModalTitle: document.getElementById('confirmation-modal-title'),
@@ -175,7 +167,7 @@
             if (!files || files.length === 0) return;
             
             resetUI();
-            extractedData = []; // Clear previous results for a new batch
+            extractedData = [];
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -190,9 +182,8 @@
                 }
             }
             
-            saveNewSession(files.length);
             dom.statusEl.textContent = `Extracted ${extractedData.length} total items from ${files.length} file(s). Please verify.`;
-            validateData(); // Run validation after all files are processed
+            validateData();
             renderTable();
         }
         
@@ -454,7 +445,7 @@
             showConfirmationModal('Clear Entire List', 'Are you sure you want to clear all extracted items?', () => {
                 extractedData = [];
                 renderTable();
-                dom.statusEl.textContent = 'List cleared. Upload a new file or load a session.';
+                dom.statusEl.textContent = 'List cleared. Upload a new file to begin.';
             });
         });
 
@@ -477,91 +468,6 @@
             }
         });
         
-        // --- Session History Logic ---
-        function loadSessions() {
-            try {
-                const saved = localStorage.getItem('menuExtractorSessions');
-                sessionHistory = saved ? JSON.parse(saved) : [];
-            } catch (e) {
-                console.error("Could not load sessions:", e);
-                sessionHistory = [];
-            }
-        }
-
-        function saveSessions() {
-            try {
-                localStorage.setItem('menuExtractorSessions', JSON.stringify(sessionHistory));
-            } catch (e) {
-                console.error("Could not save sessions:", e);
-            }
-        }
-
-        function saveNewSession(fileCount) {
-            if (extractedData.length === 0) return; // Don't save empty sessions
-            const now = new Date();
-            const newSession = {
-                id: now.getTime(),
-                name: `Session from ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
-                fileCount: fileCount,
-                itemCount: extractedData.length,
-                data: extractedData
-            };
-            sessionHistory.unshift(newSession); // Add to the beginning of the list
-            saveSessions();
-            renderHistory();
-        }
-
-        function renderHistory() {
-            dom.sessionHistoryList.innerHTML = '';
-            if (sessionHistory.length === 0) {
-                dom.sessionHistoryList.innerHTML = '<p class="text-sm text-gray-500 text-center">No saved sessions yet.</p>';
-                return;
-            }
-
-            sessionHistory.forEach(session => {
-                const sessionEl = document.createElement('div');
-                sessionEl.className = 'p-2 border rounded-md hover:bg-gray-50';
-                sessionEl.innerHTML = `
-                    <div class="font-semibold text-sm">${session.name}</div>
-                    <div class="text-xs text-gray-500">${session.itemCount} items from ${session.fileCount} file(s)</div>
-                    <div class="flex space-x-2 mt-2">
-                        <button class="load-session-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md" data-id="${session.id}">Load</button>
-                        <button class="rename-session-btn text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-md" data-id="${session.id}">Rename</button>
-                        <button class="delete-session-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded-md" data-id="${session.id}">Delete</button>
-                    </div>
-                `;
-                dom.sessionHistoryList.appendChild(sessionEl);
-            });
-        }
-
-        dom.sessionHistoryList.addEventListener('click', (e) => {
-            const button = e.target;
-            const sessionId = button.dataset.id;
-            if (!sessionId) return;
-
-            const sessionIndex = sessionHistory.findIndex(s => s.id == sessionId);
-            if (sessionIndex === -1) return;
-
-            if (button.classList.contains('load-session-btn')) {
-                extractedData = JSON.parse(JSON.stringify(sessionHistory[sessionIndex].data)); // Deep copy
-                renderTable();
-                dom.statusEl.textContent = `Loaded session: ${sessionHistory[sessionIndex].name}`;
-            } else if (button.classList.contains('delete-session-btn')) {
-                showConfirmationModal('Delete Session', `Are you sure you want to delete "${sessionHistory[sessionIndex].name}"?`, () => {
-                    sessionHistory.splice(sessionIndex, 1);
-                    saveSessions();
-                    renderHistory();
-                });
-            } else if (button.classList.contains('rename-session-btn')) {
-                 const newName = prompt('Enter new name for the session:', sessionHistory[sessionIndex].name);
-                 if (newName && newName.trim() !== '') {
-                     sessionHistory[sessionIndex].name = newName.trim();
-                     saveSessions();
-                     renderHistory();
-                 }
-            }
-        });
-
         // --- Confirmation Modal Logic ---
         function showConfirmationModal(title, message, onConfirm) {
             dom.confirmationModalTitle.textContent = title;
@@ -606,13 +512,6 @@
             document.body.removeChild(link);
         });
         
-        // --- Initial Load ---
-        function main() {
-            loadSessions();
-            renderHistory();
-        }
-        main();
-
     </script>
 </body>
 </html>
