@@ -71,7 +71,7 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Verify, Edit & Export -->
+            <!-- Right Panel: Verify & Edit -->
             <div class="lg:col-span-9">
                 <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
                     <div class="flex justify-between items-center mb-4">
@@ -567,10 +567,8 @@
             dom.confirmationModalTitle.textContent = title;
             dom.confirmationModalMessage.textContent = message;
             
-            // *** FIX: Re-select the button from the DOM each time to get the fresh node ***
-            let confirmBtn = document.getElementById('confirmation-modal-confirm-btn');
-            const newConfirmBtn = confirmBtn.cloneNode(true);
-            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            const newConfirmBtn = dom.confirmationModalConfirmBtn.cloneNode(true);
+            dom.confirmationModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, dom.confirmationModalConfirmBtn);
             
             newConfirmBtn.onclick = () => {
                 onConfirm();
