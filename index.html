@@ -36,22 +36,26 @@
         .highlight-warning {
             background-color: #fef9c3; /* yellow-100 */
         }
+        /* Make table horizontally scrollable on smaller screens */
+        #table-container {
+             overflow-x: auto;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-    <div class="container mx-auto p-4 sm:p-6 md:p-8">
+    <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">The Menu Extractor</h1>
-            <p class="text-gray-600 mt-2">Upload multiple PDF, JPG, or PNG menus to extract items and prices.</p>
+            <p class="text-gray-600 mt-2">Upload multiple PDF, JPG, or PNG menus to extract detailed product data.</p>
         </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- Left Panel: Upload -->
-            <div class="lg:col-span-4">
+        <!-- Section 1: Upload & History -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2">1. Upload & Session History</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="bg-white p-6 rounded-xl shadow-md h-full">
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">1. Upload Files</h2>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Upload Files</h3>
                     <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" class="hidden" multiple>
                     <label for="file-input" id="upload-box" class="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                         <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h5l4 4v5a4 4 0 01-4 4H7z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 17.657L13.414 21.9a2 2 0 01-2.827 0L7 17.657M10 14l2-2m0 0l2-2m-2 2v4"></path></svg>
@@ -63,53 +67,72 @@
                         <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
+                <div class="bg-white p-6 rounded-xl shadow-md h-full">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Session History</h3>
+                    <div id="session-history-list" class="space-y-2 max-h-96 overflow-y-auto">
+                        <p class="text-sm text-gray-500 text-center">No saved sessions yet.</p>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <!-- Right Panel: Verify & Edit -->
-            <div class="lg:col-span-8">
-                <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold text-gray-900">2. Verify & Edit Data</h2>
-                        <div class="flex items-center space-x-2">
-                             <span id="currency-display" class="text-sm font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md hidden"></span>
-                            <button id="clear-list-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Clear</button>
-                            <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
-                        </div>
+        <!-- Section 2: Verify & Edit -->
+        <div class="mb-8">
+            <div class="bg-white p-6 rounded-xl shadow-md h-full flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900">2. Verify & Edit Data</h2>
+                    <div class="flex items-center space-x-2">
+                         <span id="currency-display" class="text-sm font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md hidden"></span>
+                        <button id="delete-selected-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Delete Selected</button>
+                        <button id="clear-list-btn" class="text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600 disabled:bg-gray-300" disabled>Clear List</button>
+                        <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
                     </div>
-                    <div id="table-container" class="overflow-auto max-h-[60vh] flex-grow">
-                        <table class="min-w-full">
-                            <thead class="bg-gray-50 sticky top-0">
-                                <tr>
-                                    <th class="p-2 w-6"><input type="checkbox" id="select-all-checkbox"></th>
-                                    <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                    <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase w-12">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="data-table" class="divide-y divide-gray-200">
-                                <tr><td colspan="6" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                     <!-- Bulk Action Bar -->
-                    <div id="bulk-action-bar" class="mt-4 p-2 border-t border-gray-200 hidden">
+                </div>
+                <div id="table-container" class="overflow-auto max-h-[60vh] flex-grow">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="p-2 w-6"><input type="checkbox" id="select-all-checkbox"></th>
+                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Price</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Category</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cuisine Type</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant Price</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU Code</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table" class="divide-y divide-gray-200">
+                            <tr><td colspan="10" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                 <!-- Bulk Action Bar -->
+                <div id="bulk-action-bar" class="mt-4 p-2 border-t border-gray-200 hidden">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm font-medium">For selected:</span>
                         <div class="flex items-center space-x-2">
-                            <span class="text-sm font-medium">For selected:</span>
-                            <input type="text" id="bulk-category-input" placeholder="Apply Category" class="block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm">
+                            <input type="text" id="bulk-category-input" placeholder="Apply Item Category" class="block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm">
                             <button id="apply-category-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-lg hover:bg-blue-700">Apply</button>
+                        </div>
+                         <div class="flex items-center space-x-2">
+                            <input type="text" id="bulk-cuisine-input" placeholder="Apply Cuisine Type" class="block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm">
+                            <button id="apply-cuisine-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-lg hover:bg-blue-700">Apply</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- Export Panel -->
-        <div class="mt-8 bg-white p-6 rounded-xl shadow-md">
-             <h2 class="text-xl font-bold text-gray-900 mb-4">3. Export</h2>
-             <p class="text-sm text-gray-600 mb-4">Once you've verified the data, click the button below to download your cleaned data as a CSV file.</p>
-             <button id="export-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-300 text-lg" disabled>Export to CSV</button>
+        <!-- Section 3: Export Panel -->
+        <div class="mt-8">
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                 <h2 class="text-2xl font-bold text-gray-900 mb-4">3. Export</h2>
+                 <p class="text-sm text-gray-600 mb-4">Once you've verified the data, click the button below to download your cleaned data as a CSV file.</p>
+                 <button id="export-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-300 text-lg" disabled>Export to CSV</button>
+            </div>
         </div>
     </div>
 
@@ -132,6 +155,7 @@
 
         // --- State Management ---
         let extractedData = [];
+        let sessionHistory = [];
 
         // --- DOM References ---
         const dom = {
@@ -142,13 +166,17 @@
             exportBtn: document.getElementById('export-btn'),
             addRowBtn: document.getElementById('add-row-btn'),
             clearListBtn: document.getElementById('clear-list-btn'),
+            deleteSelectedBtn: document.getElementById('delete-selected-btn'),
             selectAllCheckbox: document.getElementById('select-all-checkbox'),
             bulkActionBar: document.getElementById('bulk-action-bar'),
             bulkCategoryInput: document.getElementById('bulk-category-input'),
             applyCategoryBtn: document.getElementById('apply-category-btn'),
+            bulkCuisineInput: document.getElementById('bulk-cuisine-input'),
+            applyCuisineBtn: document.getElementById('apply-cuisine-btn'),
             progressBarContainer: document.getElementById('progress-bar-container'),
             progressBar: document.getElementById('progress-bar'),
             currencyDisplay: document.getElementById('currency-display'),
+            sessionHistoryList: document.getElementById('session-history-list'),
             confirmationModalBackdrop: document.getElementById('confirmation-modal-backdrop'),
             confirmationModal: document.getElementById('confirmation-modal'),
             confirmationModalTitle: document.getElementById('confirmation-modal-title'),
@@ -167,7 +195,7 @@
             if (!files || files.length === 0) return;
             
             resetUI();
-            extractedData = [];
+            extractedData = []; // Clear previous results for a new batch
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
@@ -182,16 +210,18 @@
                 }
             }
             
+            saveNewSession(files.length);
             dom.statusEl.textContent = `Extracted ${extractedData.length} total items from ${files.length} file(s). Please verify.`;
-            validateData();
+            validateData(); // Run validation after all files are processed
             renderTable();
         }
         
         function resetUI() {
-            dom.dataTable.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
+            dom.dataTable.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
             dom.exportBtn.disabled = true;
             dom.addRowBtn.disabled = true;
             dom.clearListBtn.disabled = true;
+            dom.deleteSelectedBtn.disabled = true;
             dom.currencyDisplay.classList.add('hidden');
             dom.progressBarContainer.classList.add('hidden');
         }
@@ -239,42 +269,24 @@
         // --- Image Processing with AI ---
         async function processImage(file) {
             dom.progressBarContainer.classList.add('hidden');
-            dom.dataTable.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500"><div class="loader mx-auto"></div><p class="mt-2">Analyzing image with AI...</p></td></tr>`;
+            dom.dataTable.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-gray-500"><div class="loader mx-auto"></div><p class="mt-2">Analyzing image with AI...</p></td></tr>`;
             
             const base64ImageData = await toBase64(file);
             
             const payload = {
                 contents: [{
                     parts: [
-                        { text: "Analyze this image of a restaurant menu. Extract the following information into a single JSON object: 1. A 'currency' key with the detected currency symbol (e.g., 'RM', '$', '€'). 2. An 'items' key containing an array of all menu items, where each item is an object with 'name', 'price', and 'category' keys. The price should be a number. Correct any obvious spelling mistakes in the item names." },
+                        { text: "Analyze this image of a restaurant menu. Extract all items into a JSON array. Each object should represent a single menu item or a variant of an item and include these keys: 'cuisineType', 'itemCategory', 'skuCode', 'itemName', 'itemDescription', 'itemPrice', 'variantName', 'variantPrice', 'variantSkuCode'. If a value isn't present, use an empty string. Prices should be numbers. The itemDescription is often on a separate line below the itemName." },
                         { inline_data: { mime_type: file.type, data: base64ImageData } }
                     ]
                 }],
                 generation_config: {
                     "response_mime_type": "application/json",
-                    "response_schema": {
-                        "type": "OBJECT",
-                        "properties": {
-                            "currency": { "type": "STRING" },
-                            "items": {
-                                "type": "ARRAY",
-                                "items": {
-                                    "type": "OBJECT",
-                                    "properties": {
-                                        "name": { "type": "STRING" },
-                                        "price": { "type": "NUMBER" },
-                                        "category": { "type": "STRING" }
-                                    },
-                                    "required": ["name", "price", "category"]
-                                }
-                            }
-                        }
-                    }
                 }
             };
 
             try {
-                const apiKey = "AIzaSyA108TFfQThEtfdxI2OlarxnFmivTC9K1Q"; // Will be provided by the environment
+                const apiKey = ""; // Will be provided by the environment
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -287,12 +299,7 @@
                 const text = result.candidates[0].content.parts[0].text;
                 const data = JSON.parse(text);
                 
-                if(data.currency && dom.currencyDisplay.classList.contains('hidden')) {
-                    dom.currencyDisplay.textContent = `Detected Currency: ${data.currency}`;
-                    dom.currencyDisplay.classList.remove('hidden');
-                }
-                
-                const newData = data.items.map(item => ({ ...item, selected: false }));
+                const newData = data.map(item => ({ ...item, selected: false }));
                 extractedData.push(...newData);
 
             } catch (error) {
@@ -320,26 +327,44 @@
         function parsePdfLines(lines) {
             let currentCategory = 'Uncategorized';
             const newData = [];
+            const priceRegex = /(?:RM|\$|€)?\s*(\d+\.\d{2})$/;
 
-            lines.forEach(line => {
-                line = line.trim();
-                if (!line) return;
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (!line) continue;
 
                 if (line.toUpperCase() === line && !/\d/.test(line) && line.length < 30) {
                     currentCategory = line.split(' ')[0].charAt(0).toUpperCase() + line.split(' ')[0].slice(1).toLowerCase();
-                    return;
+                    continue;
                 }
                 
-                const priceMatch = line.match(/(.*?)\s*[.\s]*?(?:RM|\$|€)?\s*(\d+\.\d{2})$/);
+                const priceMatch = line.match(priceRegex);
                 if (priceMatch) {
-                    const itemName = priceMatch[1].trim();
-                    const price = parseFloat(priceMatch[2]);
+                    const price = parseFloat(priceMatch[1]);
+                    let itemName = line.substring(0, priceMatch.index).trim().replace(/[.\-_\s]+$/, '').trim();
+                    let itemDescription = '';
+
+                    // Look ahead for a description on the next line
+                    if (i + 1 < lines.length) {
+                        const nextLine = lines[i + 1].trim();
+                        if (nextLine && !nextLine.match(priceRegex) && nextLine.toUpperCase() !== nextLine) {
+                            itemDescription = nextLine;
+                            i++; // Skip the next line since we've used it
+                        }
+                    }
 
                     if (itemName.length > 2) {
-                        newData.push({ name: itemName, price: price, category: currentCategory, selected: false });
+                        newData.push({ 
+                            itemName: itemName, 
+                            itemPrice: price, 
+                            itemCategory: currentCategory, 
+                            itemDescription: itemDescription,
+                            selected: false,
+                            cuisineType: '', skuCode: '', variantName: '', variantPrice: '', variantSkuCode: ''
+                        });
                     }
                 }
-            });
+            }
             
             extractedData.push(...newData);
         }
@@ -348,7 +373,7 @@
         function validateData() {
             if (extractedData.length < 5) return; 
 
-            const prices = extractedData.map(item => parseFloat(item.price)).filter(p => !isNaN(p));
+            const prices = extractedData.map(item => parseFloat(item.itemPrice || item.variantPrice)).filter(p => !isNaN(p));
             if (prices.length === 0) return;
 
             const sum = prices.reduce((a, b) => a + b, 0);
@@ -356,7 +381,7 @@
             const stdDev = Math.sqrt(prices.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / prices.length);
 
             extractedData.forEach(item => {
-                const price = parseFloat(item.price);
+                const price = parseFloat(item.itemPrice || item.variantPrice);
                 if (!isNaN(price)) {
                     if (Math.abs(price - avg) > 2 * stdDev) {
                         item.potentialError = true;
@@ -372,7 +397,7 @@
         function renderTable() {
             dom.dataTable.innerHTML = '';
             if (extractedData.length === 0) {
-                dom.dataTable.innerHTML = '<tr><td colspan="6" class="p-4 text-center text-gray-500">No items found. You can add rows manually.</td></tr>';
+                dom.dataTable.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-gray-500">No items found. You can add rows manually.</td></tr>';
             }
 
             extractedData.forEach((item, index) => {
@@ -380,16 +405,24 @@
                 if(item.potentialError) {
                     row.classList.add('highlight-warning');
                 }
-                const priceValue = parseFloat(item.price);
-                const displayPrice = isNaN(priceValue) ? '0.00' : priceValue.toFixed(2);
+                
+                const itemPriceValue = parseFloat(item.itemPrice);
+                const displayItemPrice = isNaN(itemPriceValue) ? '' : `RM ${itemPriceValue.toFixed(2)}`;
+                
+                const variantPriceValue = parseFloat(item.variantPrice);
+                const displayVariantPrice = isNaN(variantPriceValue) ? '' : `RM ${variantPriceValue.toFixed(2)}`;
 
                 row.innerHTML = `
                     <td class="p-2 border-b border-gray-200 text-center"><input type="checkbox" class="row-checkbox" data-index="${index}" ${item.selected ? 'checked' : ''}></td>
                     <td class="p-2 border-b border-gray-200 text-center text-sm text-gray-500">${index + 1}</td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="name" class="p-1 rounded-md">${item.name}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="price" class="p-1 rounded-md">${displayPrice}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="category" class="p-1 rounded-md">${item.category}</div></td>
-                    <td class="p-4 border-b border-gray-200 text-center"><button data-index="${index}" class="delete-row-btn text-red-500 hover:text-red-700">&times;</button></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemName" class="p-1 rounded-md">${item.itemName || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemPrice" class="p-1 rounded-md">${displayItemPrice}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemCategory" class="p-1 rounded-md">${item.itemCategory || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemDescription" class="p-1 rounded-md">${item.itemDescription || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="cuisineType" class="p-1 rounded-md">${item.cuisineType || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="variantName" class="p-1 rounded-md">${item.variantName || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="variantPrice" class="p-1 rounded-md">${displayVariantPrice}</div></td>
+                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="skuCode" class="p-1 rounded-md">${item.skuCode || ''}</div></td>
                 `;
                 dom.dataTable.appendChild(row);
             });
@@ -405,8 +438,10 @@
             const selectedCount = extractedData.filter(item => item.selected).length;
             if (selectedCount > 0) {
                 dom.bulkActionBar.classList.remove('hidden');
+                dom.deleteSelectedBtn.disabled = false;
             } else {
                 dom.bulkActionBar.classList.add('hidden');
+                dom.deleteSelectedBtn.disabled = true;
             }
             dom.selectAllCheckbox.checked = extractedData.length > 0 && selectedCount === extractedData.length;
         }
@@ -417,27 +452,15 @@
                 const index = parseInt(target.dataset.index, 10);
                 const field = target.dataset.field;
                 let value = target.textContent;
-                if (field === 'price') {
-                    value = parseFloat(value) || 0;
+                if (field.toLowerCase().includes('price')) {
+                    value = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
                 }
                 extractedData[index][field] = value;
             }
         });
-
-        dom.dataTable.addEventListener('click', (e) => {
-            if (e.target.classList.contains('delete-row-btn')) {
-                const index = parseInt(e.target.dataset.index, 10);
-                extractedData.splice(index, 1);
-                renderTable();
-            } else if (e.target.classList.contains('row-checkbox')) {
-                const index = parseInt(e.target.dataset.index, 10);
-                extractedData[index].selected = e.target.checked;
-                updateBulkActionBar();
-            }
-        });
         
         dom.addRowBtn.addEventListener('click', () => {
-            extractedData.push({ name: 'New Item', price: 0.00, category: '', selected: false });
+            extractedData.push({ itemName: 'New Item', itemPrice: 0.00, selected: false });
             renderTable();
         });
 
@@ -445,7 +468,18 @@
             showConfirmationModal('Clear Entire List', 'Are you sure you want to clear all extracted items?', () => {
                 extractedData = [];
                 renderTable();
-                dom.statusEl.textContent = 'List cleared. Upload a new file to begin.';
+                dom.statusEl.textContent = 'List cleared. Upload a new file or load a session.';
+                dom.fileInput.value = '';
+            });
+        });
+        
+        dom.deleteSelectedBtn.addEventListener('click', () => {
+            const selectedCount = extractedData.filter(item => item.selected).length;
+            if (selectedCount === 0) return;
+            
+            showConfirmationModal('Delete Selected Items', `Are you sure you want to delete ${selectedCount} item(s)?`, () => {
+                extractedData = extractedData.filter(item => !item.selected);
+                renderTable();
             });
         });
 
@@ -460,7 +494,7 @@
             if (newCategory) {
                 extractedData.forEach(item => {
                     if (item.selected) {
-                        item.category = newCategory;
+                        item.itemCategory = newCategory;
                     }
                 });
                 dom.bulkCategoryInput.value = '';
@@ -468,13 +502,114 @@
             }
         });
         
+        dom.applyCuisineBtn.addEventListener('click', () => {
+            const newCuisine = dom.bulkCuisineInput.value.trim();
+            if (newCuisine) {
+                extractedData.forEach(item => {
+                    if (item.selected) {
+                        item.cuisineType = newCuisine;
+                    }
+                });
+                dom.bulkCuisineInput.value = '';
+                renderTable();
+            }
+        });
+        
+        // --- Session History Logic ---
+        function loadSessions() {
+            try {
+                const saved = localStorage.getItem('menuExtractorSessions');
+                sessionHistory = saved ? JSON.parse(saved) : [];
+            } catch (e) {
+                console.error("Could not load sessions:", e);
+                sessionHistory = [];
+            }
+        }
+
+        function saveSessions() {
+            try {
+                localStorage.setItem('menuExtractorSessions', JSON.stringify(sessionHistory));
+            } catch (e) {
+                console.error("Could not save sessions:", e);
+            }
+        }
+
+        function saveNewSession(fileCount) {
+            if (extractedData.length === 0) return; // Don't save empty sessions
+            const now = new Date();
+            const newSession = {
+                id: now.getTime(),
+                name: `Session from ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
+                fileCount: fileCount,
+                itemCount: extractedData.length,
+                data: extractedData
+            };
+            sessionHistory.unshift(newSession); // Add to the beginning of the list
+            saveSessions();
+            renderHistory();
+        }
+
+        function renderHistory() {
+            dom.sessionHistoryList.innerHTML = '';
+            if (sessionHistory.length === 0) {
+                dom.sessionHistoryList.innerHTML = '<p class="text-sm text-gray-500 text-center">No saved sessions yet.</p>';
+                return;
+            }
+
+            sessionHistory.forEach(session => {
+                const sessionEl = document.createElement('div');
+                sessionEl.className = 'p-2 border rounded-md hover:bg-gray-50';
+                sessionEl.innerHTML = `
+                    <div class="font-semibold text-sm">${session.name}</div>
+                    <div class="text-xs text-gray-500">${session.itemCount} items from ${session.fileCount} file(s)</div>
+                    <div class="flex space-x-2 mt-2">
+                        <button class="load-session-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md" data-id="${session.id}">Load</button>
+                        <button class="rename-session-btn text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-md" data-id="${session.id}">Rename</button>
+                        <button class="delete-session-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded-md" data-id="${session.id}">Delete</button>
+                    </div>
+                `;
+                dom.sessionHistoryList.appendChild(sessionEl);
+            });
+        }
+
+        dom.sessionHistoryList.addEventListener('click', (e) => {
+            const button = e.target;
+            const sessionId = button.dataset.id;
+            if (!sessionId) return;
+
+            const sessionIndex = sessionHistory.findIndex(s => s.id == sessionId);
+            if (sessionIndex === -1) return;
+
+            if (button.classList.contains('load-session-btn')) {
+                extractedData = JSON.parse(JSON.stringify(sessionHistory[sessionIndex].data)); // Deep copy
+                renderTable();
+                dom.statusEl.textContent = `Loaded session: ${sessionHistory[sessionIndex].name}`;
+            } else if (button.classList.contains('delete-session-btn')) {
+                showConfirmationModal('Delete Session', `Are you sure you want to delete "${sessionHistory[sessionIndex].name}"?`, () => {
+                    sessionHistory.splice(sessionIndex, 1);
+                    saveSessions();
+                    renderHistory();
+                });
+            } else if (button.classList.contains('rename-session-btn')) {
+                 const newName = prompt('Enter new name for the session:', sessionHistory[sessionIndex].name);
+                 if (newName && newName.trim() !== '') {
+                     sessionHistory[sessionIndex].name = newName.trim();
+                     saveSessions();
+                     renderHistory();
+                 }
+            }
+        });
+
         // --- Confirmation Modal Logic ---
         function showConfirmationModal(title, message, onConfirm) {
             dom.confirmationModalTitle.textContent = title;
             dom.confirmationModalMessage.textContent = message;
             
             const newConfirmBtn = dom.confirmationModalConfirmBtn.cloneNode(true);
-            dom.confirmationModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, dom.confirmationModalConfirmBtn);
+            if(dom.confirmationModalConfirmBtn.parentNode) {
+                dom.confirmationModalConfirmBtn.parentNode.replaceChild(newConfirmBtn, dom.confirmationModalConfirmBtn);
+            }
+            dom.confirmationModalConfirmBtn = newConfirmBtn; // Re-assign the reference
             
             newConfirmBtn.onclick = () => {
                 onConfirm();
@@ -496,10 +631,22 @@
         // --- CSV Export ---
         dom.exportBtn.addEventListener('click', () => {
             let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Item Name,Price,Category\r\n"; // Header row
+            const headers = ["#", "Item Name", "Item Price", "Item Category", "Description", "Cuisine Type", "Variant Name", "Variant Price", "SKU Code"];
+            csvContent += headers.join(',') + "\r\n";
 
-            extractedData.forEach(item => {
-                const row = `"${item.name.replace(/"/g, '""')}",${item.price},"${item.category.replace(/"/g, '""')}"`;
+            extractedData.forEach((item, index) => {
+                const rowData = [
+                    index + 1,
+                    item.itemName || '',
+                    item.itemPrice || '',
+                    item.itemCategory || '',
+                    item.itemDescription || '',
+                    item.cuisineType || '',
+                    item.variantName || '',
+                    item.variantPrice || '',
+                    item.skuCode || ''
+                ];
+                const row = rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(',');
                 csvContent += row + "\r\n";
             });
 
@@ -512,6 +659,13 @@
             document.body.removeChild(link);
         });
         
+        // --- Initial Load ---
+        function main() {
+            loadSessions();
+            renderHistory();
+        }
+        main();
+
     </script>
 </body>
 </html>
