@@ -36,9 +36,22 @@
         .highlight-warning {
             background-color: #fef9c3; /* yellow-100 */
         }
-        /* Make table horizontally scrollable on smaller screens */
         #table-container {
              overflow-x: auto;
+        }
+        /* Styles for the new hierarchical table */
+        .product-row td {
+            background-color: #f9fafb; /* gray-50 */
+            font-weight: 600;
+        }
+        .modifier-row td {
+            padding-left: 2rem; /* Indent modifier rows */
+        }
+        .option-row td {
+             padding-left: 4rem; /* Indent option rows */
+        }
+        .sub-row-cell {
+            border-left: 2px solid #e5e7eb; /* gray-200 */
         }
     </style>
 </head>
@@ -47,7 +60,7 @@
     <div class="container mx-auto p-4 sm:p-6 md:p-8 max-w-7xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">The Menu Extractor</h1>
-            <p class="text-gray-600 mt-2">Upload multiple PDF, JPG, or PNG menus to extract detailed product data.</p>
+            <p class="text-gray-600 mt-2">Upload menus to extract products and their modifiers.</p>
         </header>
 
         <!-- Section 1: Upload & History -->
@@ -82,46 +95,32 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-2xl font-bold text-gray-900">2. Verify & Edit Data</h2>
                     <div class="flex items-center space-x-2">
-                         <span id="currency-display" class="text-sm font-semibold text-gray-500 bg-gray-100 px-2 py-1 rounded-md hidden"></span>
-                        <button id="delete-selected-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Delete Selected</button>
+                        <button id="delete-selected-products-btn" class="text-sm bg-red-500 text-white py-1 px-3 rounded-lg hover:bg-red-600 disabled:bg-gray-300" disabled>Delete Selected</button>
                         <button id="clear-list-btn" class="text-sm bg-gray-500 text-white py-1 px-3 rounded-lg hover:bg-gray-600 disabled:bg-gray-300" disabled>Clear List</button>
-                        <button id="add-row-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+</button>
+                        <button id="add-product-btn" class="text-sm bg-indigo-500 text-white py-1 px-3 rounded-lg hover:bg-indigo-600 disabled:bg-gray-300" disabled>+ Product</button>
                     </div>
                 </div>
                 <div id="table-container" class="overflow-auto max-h-[60vh] flex-grow">
-                    <table class="min-w-full">
-                        <thead class="bg-gray-50 sticky top-0">
+                    <table class="min-w-full text-sm">
+                        <thead class="bg-gray-100 sticky top-0">
                             <tr>
                                 <th class="p-2 w-6"><input type="checkbox" id="select-all-checkbox"></th>
-                                <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase w-10">#</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Name</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Price</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Item Category</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Cuisine Type</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant Name</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Variant Price</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">SKU Code</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product Category</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Base Price (RM)</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Printer</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Modifier Name</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Modifier Type</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Modifier Option</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Additional Price</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="data-table" class="divide-y divide-gray-200">
-                            <tr><td colspan="10" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
+                            <tr><td colspan="11" class="p-4 text-center text-gray-500">Upload one or more files to begin.</td></tr>
                         </tbody>
                     </table>
-                </div>
-                 <!-- Bulk Action Bar -->
-                <div id="bulk-action-bar" class="mt-4 p-2 border-t border-gray-200 hidden">
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm font-medium">For selected:</span>
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="bulk-category-input" placeholder="Apply Item Category" class="block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm">
-                            <button id="apply-category-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-lg hover:bg-blue-700">Apply</button>
-                        </div>
-                         <div class="flex items-center space-x-2">
-                            <input type="text" id="bulk-cuisine-input" placeholder="Apply Cuisine Type" class="block w-full px-2 py-1 border border-gray-300 rounded-md shadow-sm text-sm">
-                            <button id="apply-cuisine-btn" class="text-sm bg-blue-600 text-white py-1 px-3 rounded-lg hover:bg-blue-700">Apply</button>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -154,7 +153,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://mozilla.github.io/pdf.js/build/pdf.worker.mjs`;
 
         // --- State Management ---
-        let extractedData = [];
+        let extractedData = []; // Now stores an array of product objects
         let sessionHistory = [];
 
         // --- DOM References ---
@@ -164,18 +163,12 @@
             statusEl: document.getElementById('status'),
             dataTable: document.getElementById('data-table'),
             exportBtn: document.getElementById('export-btn'),
-            addRowBtn: document.getElementById('add-row-btn'),
+            addProductBtn: document.getElementById('add-product-btn'),
             clearListBtn: document.getElementById('clear-list-btn'),
-            deleteSelectedBtn: document.getElementById('delete-selected-btn'),
+            deleteSelectedProductsBtn: document.getElementById('delete-selected-products-btn'),
             selectAllCheckbox: document.getElementById('select-all-checkbox'),
-            bulkActionBar: document.getElementById('bulk-action-bar'),
-            bulkCategoryInput: document.getElementById('bulk-category-input'),
-            applyCategoryBtn: document.getElementById('apply-category-btn'),
-            bulkCuisineInput: document.getElementById('bulk-cuisine-input'),
-            applyCuisineBtn: document.getElementById('apply-cuisine-btn'),
             progressBarContainer: document.getElementById('progress-bar-container'),
             progressBar: document.getElementById('progress-bar'),
-            currencyDisplay: document.getElementById('currency-display'),
             sessionHistoryList: document.getElementById('session-history-list'),
             confirmationModalBackdrop: document.getElementById('confirmation-modal-backdrop'),
             confirmationModal: document.getElementById('confirmation-modal'),
@@ -195,14 +188,14 @@
             if (!files || files.length === 0) return;
             
             resetUI();
-            extractedData = []; // Clear previous results for a new batch
+            extractedData = []; // Clear previous results
 
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 dom.statusEl.textContent = `Processing file ${i + 1} of ${files.length}: ${file.name}`;
                 
                 if (file.type === 'application/pdf') {
-                    await processPdf(file);
+                    await processPdf(file); // Note: PDF parsing will be basic
                 } else if (file.type.startsWith('image/')) {
                     await processImage(file);
                 } else {
@@ -211,26 +204,90 @@
             }
             
             saveNewSession(files.length);
-            dom.statusEl.textContent = `Extracted ${extractedData.length} total items from ${files.length} file(s). Please verify.`;
-            validateData(); // Run validation after all files are processed
+            dom.statusEl.textContent = `Extracted ${extractedData.length} total products from ${files.length} file(s). Please verify.`;
             renderTable();
         }
         
         function resetUI() {
-            dom.dataTable.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
-            dom.exportBtn.disabled = true;
-            dom.addRowBtn.disabled = true;
-            dom.clearListBtn.disabled = true;
-            dom.deleteSelectedBtn.disabled = true;
-            dom.currencyDisplay.classList.add('hidden');
-            dom.progressBarContainer.classList.add('hidden');
+            dom.dataTable.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">Reading files...</td></tr>';
+            updateButtonStates();
         }
 
-        // --- PDF Processing ---
-        async function processPdf(file) {
-            updateProgress(0);
-            dom.progressBarContainer.classList.remove('hidden');
+        // --- Image Processing with AI (Refactored for Hierarchical Data) ---
+        async function processImage(file) {
+            dom.dataTable.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-gray-500"><div class="loader mx-auto"></div><p class="mt-2">Analyzing image with AI for products and modifiers...</p></td></tr>`;
+            
+            const base64ImageData = await toBase64(file);
+            
+            const newPrompt = `
+                Analyze this image of a restaurant menu. Extract all products into a JSON array.
+                Each object in the array should represent a single product and follow this structure:
+                {
+                  "productCode": "The alphanumeric code for the product (e.g., A1, B2).",
+                  "productName": "The name of the product. If it has an English and Chinese name, combine them in the format 'English Name (Chinese Name)'.",
+                  "productCategory": "The category of the product (e.g., Pasta, Drinks). Infer if not stated.",
+                  "basePrice": "The base price of the product. This can be a number or a string.",
+                  "printer": "The designated printer (e.g., Food, Beverages). Infer if possible.",
+                  "modifiers": [
+                    {
+                      "modifierName": "Name of the modifier group (e.g., Spice Level, Add-ons, Size)",
+                      "modifierType": "Type of selection (e.g., Single Choice, Multiple Choice)",
+                      "options": [
+                        {
+                          "modifierOption": "The name of the specific option (e.g., Mild, Add Egg, Small)",
+                          "additionalPrice": "The price for this option as a number. Can be 0."
+                        }
+                      ]
+                    }
+                  ]
+                }
+                
+                **SPECIAL INSTRUCTIONS FOR PRICING:**
 
+                1.  **SEASONAL PRICE:** If a product's price is marked "Seasonal Price" and there is a number next to it (e.g., "Seasonal Price 60"), the value for the 'basePrice' field MUST be the combined string, e.g., "Seasonal Price 60". If there is no number, use the string "Seasonal Price".
+
+                2.  **MULTIPLE PRICES (SIZES):** When a product has multiple prices without labels (e.g., "Noodle RM 18, 28, 38"), you MUST interpret this as different sizes.
+                    - Set the 'basePrice' to the LOWEST price (e.g., 18).
+                    - ALWAYS create a "Size" modifier with 'modifierType': "Single Choice".
+                    - Create an option for EACH price, including the base one. The first option's 'additionalPrice' MUST be 0.
+                    - Calculate 'additionalPrice' for other options as (Option Price - basePrice).
+                    - PRIORITIZE menu labels like (S), (M), (L) for option names. If none, infer "Small", "Medium", "Large".
+            `;
+
+            const payload = {
+                contents: [{ parts: [ { text: newPrompt }, { inlineData: { mime_type: file.type, data: base64ImageData } } ] }],
+                generationConfig: { "response_mime_type": "application/json" }
+            };
+
+            try {
+                const apiKey = "AIzaSyA108TFfQThEtfdxI2OlarxnFmivTC9K1Q"; // Provided by environment
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+
+                const result = await response.json();
+                if (!result.candidates || !result.candidates[0].content.parts[0].text) throw new Error("AI response was empty.");
+                
+                let rawText = result.candidates[0].content.parts[0].text;
+                let cleanedText = rawText.trim().match(/```json\s*([\s\S]*?)\s*```/)?.[1] || rawText;
+                
+                const data = JSON.parse(cleanedText);
+                const newData = data.map(product => ({ ...product, selected: false, modifiers: product.modifiers || [] }));
+                extractedData.push(...newData);
+
+            } catch (error) {
+                handleError(`AI analysis failed for ${file.name}. Check console for details.`);
+                console.error("AI Error:", error);
+            }
+        }
+
+        // --- PDF Processing (Simplified for new structure) ---
+        async function processPdf(file) {
             try {
                 const fileReader = new FileReader();
                 const data = await new Promise((resolve, reject) => {
@@ -241,99 +298,31 @@
 
                 const typedarray = new Uint8Array(data);
                 const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
-                
                 let lines = [];
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    
-                    const pageLines = textContent.items.reduce((acc, item) => {
-                        const y = Math.round(item.transform[5]);
-                        if (!acc[y]) acc[y] = [];
-                        acc[y].push(item.str);
-                        return acc;
-                    }, {});
-                    Object.values(pageLines).forEach(line => lines.push(line.join(' ')));
-                    updateProgress((i / pdf.numPages) * 100);
+                    textContent.items.forEach(item => lines.push(item.str));
                 }
-                
-                parsePdfLines(lines);
+
+                const priceRegex = /(?:RM|\$|€)?\s*(\d+\.\d{2})$/;
+                lines.forEach(line => {
+                    const priceMatch = line.match(priceRegex);
+                    if (priceMatch) {
+                        extractedData.push({
+                            productCode: '',
+                            productName: line.substring(0, priceMatch.index).trim(),
+                            basePrice: parseFloat(priceMatch[1]),
+                            productCategory: 'Uncategorized',
+                            printer: '',
+                            modifiers: [],
+                            selected: false
+                        });
+                    }
+                });
 
             } catch (error) {
                 handleError(`Error reading PDF: ${file.name}`);
-            } finally {
-                dom.progressBarContainer.classList.add('hidden');
-            }
-        }
-
-        // --- Image Processing with AI ---
-        async function processImage(file) {
-            dom.progressBarContainer.classList.add('hidden');
-            dom.dataTable.innerHTML = `<tr><td colspan="10" class="p-4 text-center text-gray-500"><div class="loader mx-auto"></div><p class="mt-2">Analyzing image with AI...</p></td></tr>`;
-            
-            const base64ImageData = await toBase64(file);
-            
-            const payload = {
-                contents: [{
-                    parts: [
-                        { text: "Analyze this image of a restaurant menu. Extract all items into a JSON array. Each object should represent a single menu item or a variant of an item and include these keys: 'cuisineType', 'itemCategory', 'skuCode', 'itemName', 'itemDescription', 'itemPrice', 'variantName', 'variantPrice', 'variantSkuCode'. If a value isn't present, use an empty string. Prices should be numbers. The itemDescription is often on a separate line below the itemName." },
-                        { inlineData: { mime_type: file.type, data: base64ImageData } }
-                    ]
-                }],
-                generationConfig: {
-                    "response_mime_type": "application/json",
-                }
-            };
-
-            try {
-                // NOTE: The API key is a placeholder and will be managed by the execution environment.
-                const apiKey = "AIzaSyA108TFfQThEtfdxI2OlarxnFmivTC9K1Q"; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    const errorBody = await response.text();
-                    throw new Error(`API Error: ${response.status} ${response.statusText}. Body: ${errorBody}`);
-                }
-
-                const result = await response.json();
-
-                if (!result.candidates || result.candidates.length === 0 || !result.candidates[0].content.parts[0].text) {
-                    throw new Error("AI response did not contain any valid text content.");
-                }
-                
-                let rawText = result.candidates[0].content.parts[0].text;
-                let cleanedText = rawText.trim();
-
-                // The model sometimes returns the JSON wrapped in markdown ` ```json ... ```
-                // This regex extracts the content between the fences.
-                const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
-                const match = cleanedText.match(jsonRegex);
-                if (match && match[1]) {
-                    cleanedText = match[1];
-                }
-
-                // As a fallback, remove any remaining backticks
-                cleanedText = cleanedText.replace(/`/g, "");
-
-                try {
-                    const data = JSON.parse(cleanedText);
-                    const newData = data.map(item => ({ ...item, selected: false }));
-                    extractedData.push(...newData);
-                } catch (jsonError) {
-                    console.error("Failed to parse JSON from AI response.", jsonError);
-                    console.error("Raw AI response text:", rawText);
-                    throw new Error("AI returned malformed data that could not be parsed.");
-                }
-
-            } catch (error) {
-                handleError(`AI analysis failed for ${file.name}. Check console for details.`);
-                console.error("AI Error:", error);
             }
         }
 
@@ -347,266 +336,200 @@
         function handleError(message) {
             dom.statusEl.textContent = message;
         }
-        
-        function updateProgress(percentage) {
-            dom.progressBar.style.width = `${percentage}%`;
-        }
 
-        // --- Text Parsing ---
-        function parsePdfLines(lines) {
-            let currentCategory = 'Uncategorized';
-            const newData = [];
-            const priceRegex = /(?:RM|\$|€)?\s*(\d+\.\d{2})$/;
-
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (!line) continue;
-
-                if (line.toUpperCase() === line && !/\d/.test(line) && line.length < 30) {
-                    currentCategory = line.split(' ')[0].charAt(0).toUpperCase() + line.split(' ')[0].slice(1).toLowerCase();
-                    continue;
-                }
-                
-                const priceMatch = line.match(priceRegex);
-                if (priceMatch) {
-                    const price = parseFloat(priceMatch[1]);
-                    let itemName = line.substring(0, priceMatch.index).trim().replace(/[.\-_\s]+$/, '').trim();
-                    let itemDescription = '';
-
-                    // Look ahead for a description on the next line
-                    if (i + 1 < lines.length) {
-                        const nextLine = lines[i + 1].trim();
-                        if (nextLine && !nextLine.match(priceRegex) && nextLine.toUpperCase() !== nextLine) {
-                            itemDescription = nextLine;
-                            i++; // Skip the next line since we've used it
-                        }
-                    }
-
-                    if (itemName.length > 2) {
-                        newData.push({ 
-                            itemName: itemName, 
-                            itemPrice: price, 
-                            itemCategory: currentCategory, 
-                            itemDescription: itemDescription,
-                            selected: false,
-                            cuisineType: '', skuCode: '', variantName: '', variantPrice: '', variantSkuCode: ''
-                        });
-                    }
-                }
-            }
-            
-            extractedData.push(...newData);
-        }
-        
-        // --- AI Data Validation ---
-        function validateData() {
-            if (extractedData.length < 5) return; 
-
-            const prices = extractedData.map(item => parseFloat(item.itemPrice || item.variantPrice)).filter(p => !isNaN(p));
-            if (prices.length === 0) return;
-
-            const sum = prices.reduce((a, b) => a + b, 0);
-            const avg = sum / prices.length;
-            const stdDev = Math.sqrt(prices.map(x => Math.pow(x - avg, 2)).reduce((a, b) => a + b, 0) / prices.length);
-
-            extractedData.forEach(item => {
-                const price = parseFloat(item.itemPrice || item.variantPrice);
-                if (!isNaN(price)) {
-                    if (Math.abs(price - avg) > 2 * stdDev) {
-                        item.potentialError = true;
-                    } else {
-                        item.potentialError = false;
-                    }
-                }
-            });
-        }
-
-
-        // --- Table Rendering and Editing ---
+        // --- Table Rendering and Editing (Refactored for Hierarchical Data) ---
         function renderTable() {
             dom.dataTable.innerHTML = '';
             if (extractedData.length === 0) {
-                dom.dataTable.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-gray-500">No items found. You can add rows manually.</td></tr>';
-                 updateButtonStates();
+                dom.dataTable.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">No items found. Upload a file or add a product manually.</td></tr>';
+                updateButtonStates();
                 return;
             }
 
-            extractedData.forEach((item, index) => {
-                const row = document.createElement('tr');
-                row.className = 'data-row';
-                if(item.potentialError) {
-                    row.classList.add('highlight-warning');
-                }
+            extractedData.forEach((product, productIndex) => {
+                const totalRowsForProduct = product.modifiers.reduce((acc, mod) => acc + (mod.options.length || 1), 0) || 1;
                 
-                const itemPriceValue = parseFloat(item.itemPrice);
-                const displayItemPrice = isNaN(itemPriceValue) ? '' : `RM ${itemPriceValue.toFixed(2)}`;
-                
-                const variantPriceValue = parseFloat(item.variantPrice);
-                const displayVariantPrice = isNaN(variantPriceValue) ? '' : `RM ${variantPriceValue.toFixed(2)}`;
-
-                row.innerHTML = `
-                    <td class="p-2 border-b border-gray-200 text-center"><input type="checkbox" class="row-checkbox" data-index="${index}" ${item.selected ? 'checked' : ''}></td>
-                    <td class="p-2 border-b border-gray-200 text-center text-sm text-gray-500">${index + 1}</td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemName" class="p-1 rounded-md">${item.itemName || ''}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemPrice" class="p-1 rounded-md">${displayItemPrice}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemCategory" class="p-1 rounded-md">${item.itemCategory || ''}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="itemDescription" class="p-1 rounded-md">${item.itemDescription || ''}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="cuisineType" class="p-1 rounded-md">${item.cuisineType || ''}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="variantName" class="p-1 rounded-md">${item.variantName || ''}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="variantPrice" class="p-1 rounded-md">${displayVariantPrice}</div></td>
-                    <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-index="${index}" data-field="skuCode" class="p-1 rounded-md">${item.skuCode || ''}</div></td>
+                const productRow = document.createElement('tr');
+                productRow.className = 'product-row';
+                let productRowHTML = `
+                    <td class="p-2 border-b border-gray-200 text-center" rowspan="${totalRowsForProduct}">
+                        <input type="checkbox" class="product-checkbox" data-product-index="${productIndex}" ${product.selected ? 'checked' : ''}>
+                    </td>
+                    <td class="p-2 border-b border-gray-200" rowspan="${totalRowsForProduct}"><div contenteditable="true" data-field="productCode" data-product-index="${productIndex}">${product.productCode || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200" rowspan="${totalRowsForProduct}"><div contenteditable="true" data-field="productName" data-product-index="${productIndex}">${product.productName || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200" rowspan="${totalRowsForProduct}"><div contenteditable="true" data-field="productCategory" data-product-index="${productIndex}">${product.productCategory || ''}</div></td>
+                    <td class="p-2 border-b border-gray-200" rowspan="${totalRowsForProduct}"><div contenteditable="true" data-field="basePrice" data-product-index="${productIndex}">${product.basePrice ?? ''}</div></td>
+                    <td class="p-2 border-b border-gray-200" rowspan="${totalRowsForProduct}"><div contenteditable="true" data-field="printer" data-product-index="${productIndex}">${product.printer || ''}</div></td>
                 `;
-                dom.dataTable.appendChild(row);
+
+                if (product.modifiers.length > 0 && product.modifiers[0].options.length > 0) {
+                    const firstModifier = product.modifiers[0];
+                    const firstOption = firstModifier.options[0];
+                    productRowHTML += createModifierCells(productIndex, 0, 0, firstModifier, firstOption);
+                } else {
+                     productRowHTML += `<td colspan="4"></td>`;
+                     productRowHTML += createActionCell(productIndex);
+                }
+                productRow.innerHTML = productRowHTML;
+                dom.dataTable.appendChild(productRow);
+
+                let isFirstModifierRow = true;
+                product.modifiers.forEach((modifier, modifierIndex) => {
+                    modifier.options.forEach((option, optionIndex) => {
+                        if (isFirstModifierRow && optionIndex === 0) {
+                            return; 
+                        }
+                        const optionRow = document.createElement('tr');
+                        optionRow.className = 'option-row';
+                        optionRow.innerHTML = createModifierCells(productIndex, modifierIndex, optionIndex, modifier, option);
+                        dom.dataTable.appendChild(optionRow);
+                    });
+                    isFirstModifierRow = false;
+                });
             });
+
             updateButtonStates();
         }
+
+        function createModifierCells(pIndex, mIndex, oIndex, modifier, option) {
+            return `
+                <td class="p-2 border-b border-gray-200 sub-row-cell"><div contenteditable="true" data-field="modifierName" data-product-index="${pIndex}" data-modifier-index="${mIndex}">${modifier.modifierName || ''}</div></td>
+                <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-field="modifierType" data-product-index="${pIndex}" data-modifier-index="${mIndex}">${modifier.modifierType || ''}</div></td>
+                <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-field="modifierOption" data-product-index="${pIndex}" data-modifier-index="${mIndex}" data-option-index="${oIndex}">${option.modifierOption || ''}</div></td>
+                <td class="p-2 border-b border-gray-200"><div contenteditable="true" data-field="additionalPrice" data-product-index="${pIndex}" data-modifier-index="${mIndex}" data-option-index="${oIndex}">${option.additionalPrice ?? '0.00'}</div></td>
+                ${createActionCell(pIndex, mIndex, oIndex)}
+            `;
+        }
+
+        function createActionCell(pIndex, mIndex, oIndex) {
+             const isProductLevel = typeof mIndex === 'undefined';
+             return `<td class="p-2 border-b border-gray-200 space-x-1">
+                        ${isProductLevel ? `<button class="add-modifier-btn text-xs bg-blue-100 text-blue-800 px-1 rounded" data-product-index="${pIndex}">+M</button>` : ''}
+                        ${!isProductLevel ? `<button class="add-option-btn text-xs bg-green-100 text-green-800 px-1 rounded" data-product-index="${pIndex}" data-modifier-index="${mIndex}">+O</button>` : ''}
+                        ${!isProductLevel ? `<button class="delete-option-btn text-xs bg-red-100 text-red-800 px-1 rounded" data-product-index="${pIndex}" data-modifier-index="${mIndex}" data-option-index="${oIndex}">-</button>` : ''}
+                    </td>`;
+        }
+
 
         function updateButtonStates() {
             const hasData = extractedData.length > 0;
             dom.exportBtn.disabled = !hasData;
             dom.clearListBtn.disabled = !hasData;
-            dom.addRowBtn.disabled = false; // Always allow adding a new row
-            updateBulkActionBar();
-        }
-
-        function updateBulkActionBar() {
-            const selectedCount = extractedData.filter(item => item.selected).length;
-            if (selectedCount > 0) {
-                dom.bulkActionBar.classList.remove('hidden');
-                dom.deleteSelectedBtn.disabled = false;
-            } else {
-                dom.bulkActionBar.classList.add('hidden');
-                dom.deleteSelectedBtn.disabled = true;
-            }
-            dom.selectAllCheckbox.checked = extractedData.length > 0 && selectedCount === extractedData.length;
+            dom.addProductBtn.disabled = false;
+            
+            const selectedCount = extractedData.filter(p => p.selected).length;
+            dom.deleteSelectedProductsBtn.disabled = selectedCount === 0;
+            dom.selectAllCheckbox.checked = hasData && selectedCount === extractedData.length;
         }
 
         dom.dataTable.addEventListener('input', (e) => {
             const target = e.target;
             if (target.hasAttribute('contenteditable')) {
-                const index = parseInt(target.dataset.index, 10);
-                const field = target.dataset.field;
+                const { field, productIndex, modifierIndex, optionIndex } = target.dataset;
                 let value = target.textContent;
-                if (field.toLowerCase().includes('price')) {
-                    value = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+                let dataObject;
+
+                if (optionIndex !== undefined) {
+                    dataObject = extractedData[productIndex].modifiers[modifierIndex].options[optionIndex];
+                } else if (modifierIndex !== undefined) {
+                    dataObject = extractedData[productIndex].modifiers[modifierIndex];
+                } else {
+                    dataObject = extractedData[productIndex];
                 }
-                extractedData[index][field] = value;
+
+                if (field === 'basePrice' || field === 'additionalPrice') {
+                    if (typeof value === 'string' && value.toLowerCase().includes('seasonal')) {
+                        dataObject[field] = value;
+                    } else {
+                        dataObject[field] = parseFloat(value.replace(/[^0-9.]/g, '')) || 0;
+                    }
+                } else {
+                    dataObject[field] = value;
+                }
+            }
+        });
+
+        dom.dataTable.addEventListener('click', (e) => {
+            const button = e.target;
+            const { productIndex, modifierIndex, optionIndex } = button.dataset;
+
+            if (button.classList.contains('add-modifier-btn')) {
+                extractedData[productIndex].modifiers.push({ modifierName: 'New Modifier', modifierType: 'Single Choice', options: [{ modifierOption: 'New Option', additionalPrice: 0 }] });
+                renderTable();
+            } else if (button.classList.contains('add-option-btn')) {
+                extractedData[productIndex].modifiers[modifierIndex].options.push({ modifierOption: 'New Option', additionalPrice: 0 });
+                renderTable();
+            } else if (button.classList.contains('delete-option-btn')) {
+                const modifier = extractedData[productIndex].modifiers[modifierIndex];
+                modifier.options.splice(optionIndex, 1);
+                if (modifier.options.length === 0) {
+                    extractedData[productIndex].modifiers.splice(modifierIndex, 1);
+                }
+                renderTable();
             }
         });
 
         dom.dataTable.addEventListener('change', (e) => {
-            const target = e.target;
-            if (target.classList.contains('row-checkbox')) {
-                const index = parseInt(target.dataset.index, 10);
-                extractedData[index].selected = target.checked;
-                updateBulkActionBar();
+            if (e.target.classList.contains('product-checkbox')) {
+                const { productIndex } = e.target.dataset;
+                extractedData[productIndex].selected = e.target.checked;
+                updateButtonStates();
             }
         });
         
-        dom.addRowBtn.addEventListener('click', () => {
-            extractedData.push({ 
-                itemName: 'New Item', 
-                itemPrice: 0.00, 
-                itemCategory: '',
-                itemDescription: '',
-                cuisineType: '',
-                variantName: '',
-                variantPrice: '',
-                skuCode: '',
-                selected: false 
-            });
+        dom.selectAllCheckbox.addEventListener('change', (e) => {
+            extractedData.forEach(p => p.selected = e.target.checked);
+            renderTable();
+        });
+
+        dom.addProductBtn.addEventListener('click', () => {
+            extractedData.unshift({ productCode: '', productName: 'New Product', basePrice: 0.00, productCategory: '', printer: '', modifiers: [], selected: false });
             renderTable();
         });
 
         dom.clearListBtn.addEventListener('click', () => {
-            showConfirmationModal('Clear Entire List', 'Are you sure you want to clear all extracted items?', () => {
+            showConfirmationModal('Clear Entire List', 'Are you sure you want to clear all extracted products?', () => {
                 extractedData = [];
                 renderTable();
-                dom.statusEl.textContent = 'List cleared. Upload a new file or load a session.';
-                dom.fileInput.value = '';
+                dom.statusEl.textContent = 'List cleared.';
             });
         });
         
-        dom.deleteSelectedBtn.addEventListener('click', () => {
-            const selectedCount = extractedData.filter(item => item.selected).length;
+        dom.deleteSelectedProductsBtn.addEventListener('click', () => {
+            const selectedCount = extractedData.filter(p => p.selected).length;
             if (selectedCount === 0) return;
             
-            showConfirmationModal('Delete Selected Items', `Are you sure you want to delete ${selectedCount} item(s)?`, () => {
-                extractedData = extractedData.filter(item => !item.selected);
+            showConfirmationModal('Delete Selected Products', `Are you sure you want to delete ${selectedCount} product(s)?`, () => {
+                extractedData = extractedData.filter(p => !p.selected);
                 renderTable();
             });
         });
-
-        dom.selectAllCheckbox.addEventListener('change', (e) => {
-            const isChecked = e.target.checked;
-            extractedData.forEach(item => item.selected = isChecked);
-            // Re-render all checkboxes
-            const checkboxes = dom.dataTable.querySelectorAll('.row-checkbox');
-            checkboxes.forEach((checkbox, index) => {
-                checkbox.checked = isChecked;
-            });
-            updateBulkActionBar();
-        });
-
-        dom.applyCategoryBtn.addEventListener('click', () => {
-            const newCategory = dom.bulkCategoryInput.value.trim();
-            if (newCategory) {
-                extractedData.forEach(item => {
-                    if (item.selected) {
-                        item.itemCategory = newCategory;
-                    }
-                });
-                dom.bulkCategoryInput.value = '';
-                renderTable();
-            }
-        });
         
-        dom.applyCuisineBtn.addEventListener('click', () => {
-            const newCuisine = dom.bulkCuisineInput.value.trim();
-            if (newCuisine) {
-                extractedData.forEach(item => {
-                    if (item.selected) {
-                        item.cuisineType = newCuisine;
-                    }
-                });
-                dom.bulkCuisineInput.value = '';
-                renderTable();
-            }
-        });
-        
-        // --- Session History Logic ---
         function loadSessions() {
             try {
                 const saved = localStorage.getItem('menuExtractorSessions');
                 sessionHistory = saved ? JSON.parse(saved) : [];
-            } catch (e) {
-                console.error("Could not load sessions:", e);
-                sessionHistory = [];
-            }
+            } catch (e) { console.error("Could not load sessions:", e); sessionHistory = []; }
         }
 
         function saveSessions() {
             try {
                 localStorage.setItem('menuExtractorSessions', JSON.stringify(sessionHistory));
-            } catch (e) {
-                console.error("Could not save sessions:", e);
-            }
+            } catch (e) { console.error("Could not save sessions:", e); }
         }
 
         function saveNewSession(fileCount) {
-            if (extractedData.length === 0) return; // Don't save empty sessions
+            if (extractedData.length === 0) return;
             const now = new Date();
             const newSession = {
                 id: now.getTime(),
                 name: `Session from ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`,
                 fileCount: fileCount,
                 itemCount: extractedData.length,
-                data: JSON.parse(JSON.stringify(extractedData)) // Deep copy
+                data: JSON.parse(JSON.stringify(extractedData))
             };
-            sessionHistory.unshift(newSession); // Add to the beginning of the list
-            if (sessionHistory.length > 10) { // Keep only last 10 sessions
-                sessionHistory.pop();
-            }
+            sessionHistory.unshift(newSession);
+            if (sessionHistory.length > 10) sessionHistory.pop();
             saveSessions();
             renderHistory();
         }
@@ -617,19 +540,15 @@
                 dom.sessionHistoryList.innerHTML = '<p class="text-sm text-gray-500 text-center">No saved sessions yet.</p>';
                 return;
             }
-
             sessionHistory.forEach(session => {
                 const sessionEl = document.createElement('div');
                 sessionEl.className = 'p-2 border rounded-md hover:bg-gray-50 transition-colors';
-                sessionEl.innerHTML = `
-                    <div class="font-semibold text-sm">${session.name}</div>
-                    <div class="text-xs text-gray-500">${session.itemCount} items from ${session.fileCount} file(s)</div>
+                sessionEl.innerHTML = `<div class="font-semibold text-sm">${session.name}</div>
+                    <div class="text-xs text-gray-500">${session.itemCount} products</div>
                     <div class="flex space-x-2 mt-2">
                         <button class="load-session-btn text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-md hover:bg-blue-200" data-id="${session.id}">Load</button>
-                        <button class="rename-session-btn text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-md hover:bg-gray-200" data-id="${session.id}">Rename</button>
                         <button class="delete-session-btn text-xs bg-red-100 text-red-800 px-2 py-1 rounded-md hover:bg-red-200" data-id="${session.id}">Delete</button>
-                    </div>
-                `;
+                    </div>`;
                 dom.sessionHistoryList.appendChild(sessionEl);
             });
         }
@@ -638,12 +557,11 @@
             const button = e.target;
             const sessionId = button.dataset.id;
             if (!sessionId) return;
-
             const sessionIndex = sessionHistory.findIndex(s => s.id == sessionId);
             if (sessionIndex === -1) return;
 
             if (button.classList.contains('load-session-btn')) {
-                extractedData = JSON.parse(JSON.stringify(sessionHistory[sessionIndex].data)); // Deep copy
+                extractedData = JSON.parse(JSON.stringify(sessionHistory[sessionIndex].data));
                 renderTable();
                 dom.statusEl.textContent = `Loaded session: ${sessionHistory[sessionIndex].name}`;
             } else if (button.classList.contains('delete-session-btn')) {
@@ -652,76 +570,59 @@
                     saveSessions();
                     renderHistory();
                 });
-            } else if (button.classList.contains('rename-session-btn')) {
-                 const newName = prompt('Enter new name for the session:', sessionHistory[sessionIndex].name);
-                 if (newName && newName.trim() !== '') {
-                     sessionHistory[sessionIndex].name = newName.trim();
-                     saveSessions();
-                     renderHistory();
-                 }
             }
         });
 
-        // --- Confirmation Modal Logic ---
         let confirmCallback = null;
         dom.confirmationModalConfirmBtn.addEventListener('click', () => {
-            if (confirmCallback) {
-                confirmCallback();
-            }
+            if (confirmCallback) confirmCallback();
             hideConfirmationModal();
         });
-        dom.confirmationModalCancelBtn.addEventListener('click', () => {
-            hideConfirmationModal();
-        });
+        dom.confirmationModalCancelBtn.addEventListener('click', () => hideConfirmationModal());
 
         function showConfirmationModal(title, message, onConfirm) {
             dom.confirmationModalTitle.textContent = title;
             dom.confirmationModalMessage.textContent = message;
             confirmCallback = onConfirm;
-            
             dom.confirmationModalBackdrop.classList.remove('hidden');
-            setTimeout(() => {
-                dom.confirmationModal.classList.remove('scale-95', 'opacity-0');
-                dom.confirmationModal.classList.add('scale-100', 'opacity-100');
-            }, 10);
+            setTimeout(() => dom.confirmationModal.classList.remove('scale-95', 'opacity-0'), 10);
         }
 
         function hideConfirmationModal() {
-            dom.confirmationModal.classList.remove('scale-100', 'opacity-100');
             dom.confirmationModal.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                dom.confirmationModalBackdrop.classList.add('hidden');
-                confirmCallback = null;
-            }, 200);
+            setTimeout(() => dom.confirmationModalBackdrop.classList.add('hidden'), 200);
         }
 
-
-        // --- CSV Export ---
         dom.exportBtn.addEventListener('click', () => {
             if (extractedData.length === 0) return;
 
-            const headers = ["#", "Item Name", "Item Price", "Item Category", "Description", "Cuisine Type", "Variant Name", "Variant Price", "SKU Code"];
-            const csvRows = [headers.join(',')]; // Add header row
+            const headers = ["Product Code", "Product Name", "Product Category", "Base Price (RM)", "Printer", "Modifier Name", "Modifier Type", "Modifier Option", "Additional Price"];
+            const csvRows = [headers.join(',')];
 
-            extractedData.forEach((item, index) => {
-                // Ensure null/undefined/0 are handled correctly
-                const itemPrice = (item.itemPrice !== null && item.itemPrice !== undefined) ? item.itemPrice : '';
-                const variantPrice = (item.variantPrice !== null && item.variantPrice !== undefined) ? item.variantPrice : '';
-
-                const rowData = [
-                    index + 1,
-                    item.itemName || '',
-                    itemPrice,
-                    item.itemCategory || '',
-                    item.itemDescription || '',
-                    item.cuisineType || '',
-                    item.variantName || '',
-                    variantPrice,
-                    item.skuCode || ''
-                ];
-                // Escape double quotes and wrap each field in double quotes
-                const row = rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(',');
-                csvRows.push(row);
+            extractedData.forEach(product => {
+                if (product.modifiers && product.modifiers.length > 0) {
+                    product.modifiers.forEach(modifier => {
+                        if (modifier.options && modifier.options.length > 0) {
+                            modifier.options.forEach(option => {
+                                const rowData = [
+                                    product.productCode || '',
+                                    product.productName || '',
+                                    product.productCategory || '',
+                                    product.basePrice ?? '',
+                                    product.printer || '',
+                                    modifier.modifierName || '',
+                                    modifier.modifierType || '',
+                                    option.modifierOption || '',
+                                    option.additionalPrice ?? ''
+                                ];
+                                csvRows.push(rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(','));
+                            });
+                        }
+                    });
+                } else {
+                    const rowData = [product.productCode || '', product.productName || '', product.productCategory || '', product.basePrice ?? '', product.printer || '', '', '', '', ''];
+                    csvRows.push(rowData.map(d => `"${String(d).replace(/"/g, '""')}"`).join(','));
+                }
             });
 
             const csvString = csvRows.join('\r\n');
@@ -729,13 +630,12 @@
 
             const link = document.createElement("a");
             link.setAttribute("href", csvContent);
-            link.setAttribute("download", "menu_data.csv");
+            link.setAttribute("download", "menu_data_with_modifiers.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         });
         
-        // --- Initial Load ---
         function main() {
             loadSessions();
             renderHistory();
